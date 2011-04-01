@@ -104,16 +104,15 @@ route(X=#exchange{name = #resource{virtual_host = _VirtualHost, name = Name}},
         % Insert data
         %io:format("new obj: ~p~n", [Obj1]),
         riakc_pb_socket:put(Client, Obj1)
-      end, [], Routes),
-      rabbit_exchange_type_topic:route(X, D);
+      end, [], Routes);
     _Err -> 
       %io:format("err: ~p~n", [Err]),
-      error_logger:error_msg("Could not connect to Riak"),
-      {unroutable, []}
-  end.
+      error_logger:error_msg("Could not connect to Riak")
+  end,
+  rabbit_exchange_type_topic:route(X, D).
   
 do_add_binding(X, B) ->
-  rabbit_exchange_type_topic:add_binding(X, B).
+  rabbit_exchange_type_topic:add_binding(true, X, B).
   
 exchange_a(#exchange{name = #resource{virtual_host=VirtualHost, name=Name}}) ->
   list_to_atom(lists:flatten(io_lib:format("~s ~s", [VirtualHost, Name]))).
