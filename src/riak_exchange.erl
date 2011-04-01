@@ -97,7 +97,7 @@ route(X=#exchange{name = #resource{virtual_host = _VirtualHost, name = Name}},
         Obj1 = case lists:foldl(fun({PropKey, _Type, PropVal}, NewProps) ->
               [{<<"X-Riak-Meta-", PropKey/binary>>, PropVal} | NewProps]
             end, [], Headers) of
-          []    -> Obj0;
+             [] -> Obj0;
           CMeta -> riakc_obj:update_metadata(Obj0, dict:store(<<"X-Riak-Meta">>, CMeta, riakc_obj:get_update_metadata(Obj0)))
         end,
 
@@ -122,32 +122,32 @@ exchange_a(#exchange{name = #resource{virtual_host=VirtualHost, name=Name}}) ->
   
 get_riak_client(X=#exchange{arguments = Args}) ->
   Host = case lists:keyfind(?HOST, 1, Args) of
-    {_, _, H} -> binary_to_list(H);
-            _ -> "127.0.0.1"
+     {_, _, H} -> binary_to_list(H);
+             _ -> "127.0.0.1"
   end,
   Port = case lists:keyfind(?PORT, 1, Args) of
-    {_, _, P} -> 
-      {Pn, _} = string:to_integer(binary_to_list(P)),
-      Pn;
-    _ -> 8087
+     {_, _, P} -> 
+       {Pn, _} = string:to_integer(binary_to_list(P)),
+       Pn;
+             _ -> 8087
   end,
   MaxClients = case lists:keyfind(?MAX_CLIENTS, 1, Args) of
     {_, _, MC} -> 
       {MCn, _} = string:to_integer(binary_to_list(MC)),
       MCn;
-    _ -> 5
+             _ -> 5
   end,
   XA = exchange_a(X),
 
   try 
     case pg2:get_closest_pid(XA) of
       {error, _} -> create_riak_client(XA, Host, Port, MaxClients);
-      PbClient -> 
+        PbClient -> 
         case riakc_pb_socket:ping(PbClient) of
           pong -> 
             %io:format("returning good client: ~p~n", [PbClient]),
             {ok, PbClient};
-          _Else -> 
+             _ -> 
             pg2:leave(XA, PbClient),
             get_riak_client(X)
         end

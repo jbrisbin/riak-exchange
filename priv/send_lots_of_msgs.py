@@ -1,10 +1,13 @@
 #!/usr/bin/env python
+import time
 import amqplib.client_0_8 as amqp
 
 conn = amqp.Connection()
 ch = conn.channel()
 
-for i in range(1000):
+start = time.time()
+
+for i in range(10000):
   msg = amqp.Message(
     "Message #%s" % i, 
     content_type="text/plain", 
@@ -12,4 +15,7 @@ for i in range(1000):
       "test": "header"
     }
   )
-  ch.basic_publish(msg, "riak", "msg%s" % i)
+  ch.basic_publish(msg, "riak", "msg.%s" % i)
+
+end = time.time()
+print "Elapsed time: %s" % (10000 / (end - start))

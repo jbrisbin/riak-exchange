@@ -12,7 +12,7 @@ def callback(msg):
 ch.access_request('/riak', active=True, read=True)
 
 qname, _, _ = ch.queue_declare()
-ch.queue_bind(qname, "riak", "test")
+ch.queue_bind(qname, "riak", "msg.*")
 ch.basic_consume(qname, callback=callback)
 
 while ch.callbacks:
