@@ -6,10 +6,12 @@ conn = amqp.Connection()
 ch = conn.channel()
 
 msg = amqp.Message(
-  "The time is now: %s" % (datetime.now().strftime("%d/%m/%y %H:%M")), 
-  content_type="text/plain", 
+  "{\"now\": \"%s\"}" % (datetime.now().strftime("%d/%m/%y %H:%M")), 
+  content_type="application/json", 
   application_headers={
     "test": "header"
+    # "X-Riak-Bucket": "test",
+    # "X-Riak-Key": "test2"
   }
 )
-ch.basic_publish(msg, "riak", "test")
+ch.basic_publish(msg, "rtest", "test2")

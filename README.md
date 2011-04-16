@@ -1,5 +1,7 @@
 # RabbitMQ Riak Exchange
 
+So far tested with RabbitMQ v2.3.0 to v2.4.1.
+
 This is a custom exchange type for RabbitMQ that will put any message sent to it into Riak. 
 The name of your exchange becomes the bucket and the routing key you use will become the object key.
 
@@ -37,6 +39,21 @@ Whatever Content-Type you set on the message will be the Content-Type used for R
 
 #### Headers
 
-The Riak exchange will translate your custom AMQP message headers into the special `X-Riak-Meta-` headers required 
-by Riak. For example, if you set a custom header with the name `customheader`, your Riak document will have a 
-header named `X-Riak-Meta-customheader`.
+By default, the Riak exchange will use your exchange name as the bucket name and your routing key as the Riak 
+key. To alter this behaviour, simply pass special message headers:
+
+* `X-Riak-Bucket` - set this to the bucket name to use.
+* `X-Riak-Key` - set this to the key to use.
+
+For example, setting AMQP messages headers like the following:
+
+    {
+      "X-Riak-Bucket": "riak-test",
+      "X-Riak-Key": "mykey"
+    }
+
+Would result in a Riak object being stored at `/riak-test/mykey`
+
+The Riak exchange will also translate your custom AMQP message headers into the special `X-Riak-Meta-` 
+headers required by Riak. For example, if you set a custom header with the name `customheader`, your Riak 
+document will have a header named `X-Riak-Meta-customheader`.

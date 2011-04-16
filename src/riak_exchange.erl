@@ -6,6 +6,8 @@
 -define(HOST, <<"host">>).
 -define(PORT, <<"port">>).
 -define(MAX_CLIENTS, <<"maxclients">>).
+-define(BUCKET, <<"X-Riak-Bucket">>).
+-define(KEY, <<"X-Riak-Key">>).
 
 -rabbit_boot_step({?MODULE,
                    [{description, "exchange type riak"},
@@ -37,10 +39,8 @@ create(Tx, X = #exchange{name = #resource{virtual_host=_VirtualHost, name=_Name}
   XA = exchange_a(X),
   pg2:create(XA),
   
-  %io:format("create()~n x: ~p~n name: ~p~n args: ~p~n", [X, XA, Args]),
   case get_riak_client(X) of
     {ok, _Client} ->
-      %io:format("got client: ~p~n", [Client]),
       rabbit_exchange_type_topic:create(Tx, X);
     _ -> 
       error_logger:error_msg("Could not connect to Riak"),
@@ -81,28 +81,43 @@ route(X=#exchange{name = #resource{virtual_host = _VirtualHost, name = Name}},
 
   case get_riak_client(X) of
     {ok, Client} ->
-      %io:format("got client: ~p~n", [Client]),
       % Convert payload to list, concat together
       Payload = lists:foldl(fun(Chunk, NewPayload) ->
         <<Chunk/binary, NewPayload/binary>>
       end, <<>>, PayloadRev),
 
-      lists:foldl(fun(Key, _) ->
-        Obj0 = case riakc_pb_socket:get(Client, Name, Key) of
-          {ok, OldObj} -> riakc_obj:update_value(OldObj, Payload);
-                     _ -> riakc_obj:new(Name, Key, Payload, binary_to_list(ContentType))
+      lists:foldl(fun(Route, _) ->
+        % Look for bucket from headers or default to exchange name
+        Bucket = case lists:keyfind(?BUCKET, 1, Headers) of
+          {?BUCKET, _, B} -> B;
+                        _ -> Name
+        end,
+        % Look for key from headers or default to routing key
+        Key = case lists:keyfind(?KEY, 1, Headers) of
+          {?KEY, _, K} -> K;
+                     _ -> Route
+        end,
+
+        % Insert or update everything
+        % io:format("url: /~s/~s~n", [Bucket, Key]),
+        Obj0 = case riakc_pb_socket:get(Client, Bucket, Key) of
+          {ok, OldObj} -> riakc_obj:update_value(OldObj, Payload, binary_to_list(ContentType));
+                     _ -> riakc_obj:new(Bucket, Key, Payload, binary_to_list(ContentType))
         end,
 
         % Populate metadata from msg properties
         Obj1 = case lists:foldl(fun({PropKey, _Type, PropVal}, NewProps) ->
-              [{<<"X-Riak-Meta-", PropKey/binary>>, PropVal} | NewProps]
+              case PropKey of
+                <<"X-Riak-Bucket", _/binary>> -> NewProps;
+                <<"X-Riak-Key", _/binary>>    -> NewProps;
+                _                             -> [{<<"X-Riak-Meta-", PropKey/binary>>, PropVal} | NewProps]
+              end
             end, [], Headers) of
              [] -> Obj0;
           CMeta -> riakc_obj:update_metadata(Obj0, dict:store(<<"X-Riak-Meta">>, CMeta, riakc_obj:get_update_metadata(Obj0)))
         end,
 
-        % Insert data
-        %io:format("new obj: ~p~n", [Obj1]),
+        % Insert/Update data
         riakc_pb_socket:put(Client, Obj1)
       end, [], Routes);
     _Err -> 
@@ -116,9 +131,6 @@ do_add_binding(X, B) ->
   
 exchange_a(#exchange{name = #resource{virtual_host=VirtualHost, name=Name}}) ->
   list_to_atom(lists:flatten(io_lib:format("~s ~s", [VirtualHost, Name]))).
-
-%client_a(Host, Port) ->
-%  list_to_atom(lists:flatten(io_lib:format("~s ~p", [Host, Port]))).
   
 get_riak_client(X=#exchange{arguments = Args}) ->
   Host = case lists:keyfind(?HOST, 1, Args) of
@@ -143,20 +155,20 @@ get_riak_client(X=#exchange{arguments = Args}) ->
     case pg2:get_closest_pid(XA) of
       {error, _} -> create_riak_client(XA, Host, Port, MaxClients);
         PbClient -> 
-        case riakc_pb_socket:ping(PbClient) of
-          pong -> 
-            %io:format("returning good client: ~p~n", [PbClient]),
-            {ok, PbClient};
-             _ -> 
-            pg2:leave(XA, PbClient),
-            get_riak_client(X)
-        end
+          case riakc_pb_socket:ping(PbClient) of
+            pong -> {ok, PbClient};
+            _    -> 
+              error_logger:error_report("Disconnected Riak client discarded."),
+              pg2:leave(XA, PbClient),
+              get_riak_client(X)
+          end
     end
   catch
     _ -> create_riak_client(XA, Host, Port, MaxClients)
   end.
 
 create_riak_client(XA, Host, Port, MaxClients) ->
+  error_logger:info_report(io_lib:format("Starting ~p Riak PB clients to ~p:~p", [MaxClients, Host, Port])),
   case riakc_pb_socket:start_link(Host, Port) of
     {ok, PbClient} -> 
       pg2:join(XA, PbClient),
