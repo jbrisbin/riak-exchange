@@ -1,4 +1,4 @@
--module(riak_exchange).
+-module(rabbit_exchange_type_riak).
 -include("riak_exchange.hrl").
 -behaviour(rabbit_exchange_type).
 
@@ -6,11 +6,12 @@
 -define(HOST, <<"host">>).
 -define(PORT, <<"port">>).
 -define(MAX_CLIENTS, <<"maxclients">>).
+-define(TYPE, <<"type-module">>).
 -define(BUCKET, <<"X-Riak-Bucket">>).
 -define(KEY, <<"X-Riak-Key">>).
 
 -rabbit_boot_step({?MODULE,
-                   [{description, "exchange type riak"},
+                   [{description, "Experimental Riak Exchange"},
                     {mfa, {rabbit_registry, register, [exchange, ?EXCHANGE_TYPE_BIN, ?MODULE]}},
                     {requires, rabbit_registry},
                     {enables, kernel_ready}]}).
@@ -33,7 +34,8 @@ description() ->
   [{name, ?EXCHANGE_TYPE_BIN}, {description, <<"Experimental Riak Exchange">>}].
 
 validate(X) ->
-  rabbit_exchange_type_topic:validate(X).
+  Exchange = exchange_type(X),
+  Exchange:validate(X).
   
 create(Tx, X = #exchange{name = #resource{virtual_host=_VirtualHost, name=_Name}, arguments = _Args}) ->
   XA = exchange_a(X),
@@ -41,7 +43,8 @@ create(Tx, X = #exchange{name = #resource{virtual_host=_VirtualHost, name=_Name}
   
   case get_riak_client(X) of
     {ok, _Client} ->
-      rabbit_exchange_type_topic:create(Tx, X);
+      Exchange = exchange_type(X),
+      Exchange:create(Tx, X);
     _ -> 
       error_logger:error_msg("Could not connect to Riak"),
       {error, "could not connect to riak"}
@@ -53,7 +56,8 @@ recover(X, _Bs) ->
 delete(Tx, X, Bs) ->
   XA = exchange_a(X),
   pg2:delete(XA),
-  rabbit_exchange_type_topic:delete(Tx, X, Bs).
+  Exchange = exchange_type(X),
+  Exchange:delete(Tx, X, Bs).
 
 add_binding(true, X, B) ->
   do_add_binding(X, B);
@@ -61,7 +65,8 @@ add_binding(false, _X, _B) ->
   ok.
 
 remove_bindings(Tx, X, Bs) ->
-  rabbit_exchange_type_topic:remove_bindings(Tx, X, Bs).
+  Exchange = exchange_type(X),
+  Exchange:remove_bindings(Tx, X, Bs).
 
 assert_args_equivalence(X, Args) ->
   rabbit_exchange:assert_args_equivalence(X, Args).
@@ -124,10 +129,12 @@ route(X=#exchange{name = #resource{virtual_host = _VirtualHost, name = Name}},
       %io:format("err: ~p~n", [Err]),
       error_logger:error_msg("Could not connect to Riak")
   end,
-  rabbit_exchange_type_topic:route(X, D).
+  Exchange = exchange_type(X),
+  Exchange:route(X, D).
   
 do_add_binding(X, B) ->
-  rabbit_exchange_type_topic:add_binding(true, X, B).
+  Exchange = exchange_type(X),
+  Exchange:add_binding(true, X, B).
   
 exchange_a(#exchange{name = #resource{virtual_host=VirtualHost, name=Name}}) ->
   list_to_atom(lists:flatten(io_lib:format("~s ~s", [VirtualHost, Name]))).
@@ -177,4 +184,16 @@ create_riak_client(XA, Host, Port, MaxClients) ->
         _ -> {ok, PbClient}
       end;
     Err -> Err
+  end.
+
+exchange_type(#exchange{ arguments=Args }) ->
+  case lists:keyfind(?TYPE, 1, Args) of
+    {?TYPE, _, Type} -> 
+      case list_to_atom(binary_to_list(Type)) of
+        riak_exchange -> 
+          error_logger:error_report("Cannot base a Riak exchange on a Riak exchange. An infinite loop would occur."),
+          rabbit_exchange_type_topic;
+        Else -> Else
+      end;
+    _ -> rabbit_exchange_type_topic
   end.

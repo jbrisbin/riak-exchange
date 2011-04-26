@@ -9,10 +9,10 @@ def callback(msg):
   msg.channel.basic_ack(msg.delivery_tag)
   msg.channel.basic_cancel(msg.consumer_tag)
 
-ch.access_request('/riak', active=True, read=True)
+ch.access_request('/rtest', active=True, read=True)
 
 qname, _, _ = ch.queue_declare()
-ch.queue_bind(qname, "riak", "msg.*")
+ch.queue_bind(qname, "rtest", "rtest")
 ch.basic_consume(qname, callback=callback)
 
 while ch.callbacks:

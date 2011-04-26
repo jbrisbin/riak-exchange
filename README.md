@@ -35,14 +35,28 @@ I've also put up a tar file of the required .ez files you need to install in you
 ## Configuration
 
 To use the Riak exchange type, declare your exchange as type "x-riak". In addition to forwarding messages to 
-Riak, this is also a topic exchange so you can have consumers bound to this exchange and they will receive 
-the messages as well as going to Riak.
+Riak, this also acts like a regular exchange so you can have consumers bound to this exchange and they will 
+receive the messages as well as going to Riak.
 
 To configure what Riak server to connect to, pass some arguments to the exchange declaration:
 
 * `host` - Hostname or IP of the Riak server to connect to.
 * `port` - Port number of the Riak server to connect to.
 * `maxclients` - The maximum number of clients to create in the pool (use more clients for higher-traffic exchanges).
+
+NEW in version 0.1.5: The Riak exchange can act like any valid RabbitMQ exchange type. Set an argument on your 
+exchange when you declare it named `type_module` and give it a valid RabbitMQ exchange type module. You can use 
+the ones built in that come with RabbitMQ, or you can use any custom ones you or a third party have written.
+
+Here's a sample list of possible exchange types and what you should set the `type_module` value to:
+
+* `direct`: `rabbit_exchange_type_direct`
+* `fanout`: `rabbit_exchange_type_fanout`
+* `headers`: `rabbit_exchange_type_headers`
+* `topic`: `rabbit_exchange_type_topic`
+* `random`: [`rabbit_exchange_type_random`](https://github.com/jbrisbin/random-exchange)
+
+If you don't specify anything, the exchange will default to a topic exchange.
 
 ## Metadata
 

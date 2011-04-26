@@ -1,7 +1,7 @@
-{application, riak_exchange,
+{application, rabbit_exchange_type_riak,
  [
   {description, "RabbitMQ Riak Exchange Plugin"},
-  {vsn, "0.1.1"},
+  {vsn, "0.1.5"},
   {modules, []},
   {registered, []},
   {env, []},

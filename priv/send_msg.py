@@ -14,4 +14,4 @@ msg = amqp.Message(
     # "X-Riak-Key": "test2"
   }
 )
-ch.basic_publish(msg, "rtest", "test2")
+ch.basic_publish(msg, "rtest", "rtest")
