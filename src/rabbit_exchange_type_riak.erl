@@ -63,10 +63,9 @@ delete(Tx, X, Bs) ->
   Exchange = exchange_type(X),
   Exchange:delete(Tx, X, Bs).
 
-add_binding(true, X, B) ->
-  do_add_binding(X, B);
-add_binding(false, _X, _B) ->
-  ok.
+add_binding(Tx, X, B) ->
+  Exchange = exchange_type(X),
+  Exchange:add_binding(Tx, X, B).
 
 remove_bindings(Tx, X, Bs) ->
   Exchange = exchange_type(X),
@@ -94,7 +93,7 @@ route(X=#exchange{name = #resource{virtual_host = _VirtualHost, name = Name}},
       Payload = lists:foldl(fun(Chunk, NewPayload) ->
         <<Chunk/binary, NewPayload/binary>>
       end, <<>>, PayloadRev),
-      io:format("payload: ~p~n", [Payload]),
+      % io:format("payload: ~p~n", [Payload]),
 
       lists:foldl(fun(Route, _) ->
         % Look for bucket from headers or default to exchange name
@@ -109,14 +108,15 @@ route(X=#exchange{name = #resource{virtual_host = _VirtualHost, name = Name}},
         end,
 
         % Insert or update everything
-        io:format("storing message to url: /~s/~s~n", [Bucket, Key]),
+        io:format("storing message: /~s/~s as ~s~n", [Bucket, Key, ContentType]),
         Obj0 = case riakc_pb_socket:get(Client, Bucket, Key) of
           {ok, OldObj} -> riakc_obj:update_value(OldObj, Payload, binary_to_list(ContentType));
                      _ -> riakc_obj:new(Bucket, Key, Payload, binary_to_list(ContentType))
         end,
 
         % Populate metadata from msg properties
-        Obj1 = case lists:foldl(fun({PropKey, _Type, PropVal}, NewProps) ->
+        Obj1 = case lists:foldl(fun({PropKey, PropType, PropVal}, NewProps) ->
+          io:format("key, type, val= (~p, ~p, ~p)~n", [PropKey, PropType, PropVal]),
               case PropKey of
                 <<"X-Riak-Bucket", _/binary>> -> NewProps;
                 <<"X-Riak-Key", _/binary>>    -> NewProps;
@@ -137,10 +137,6 @@ route(X=#exchange{name = #resource{virtual_host = _VirtualHost, name = Name}},
   end,
   Exchange = exchange_type(X),
   Exchange:route(X, D).
-  
-do_add_binding(X, B) ->
-  Exchange = exchange_type(X),
-  Exchange:add_binding(true, X, B).
   
 exchange_a(#exchange{name = #resource{virtual_host=VirtualHost, name=Name}}) ->
   list_to_atom(lists:flatten(io_lib:format("~s ~s", [VirtualHost, Name]))).
@@ -195,6 +191,7 @@ create_riak_client(XA, Host, Port, MaxClients) ->
 exchange_type(#exchange{ arguments=Args }) ->
   case lists:keyfind(?TYPE, 1, Args) of
     {?TYPE, _, Type} -> 
+      %io:format("found type ~p~n", [Type]),
       case list_to_atom(binary_to_list(Type)) of
         rabbit_exchange_type_riak -> 
           error_logger:error_report("Cannot base a Riak exchange on a Riak exchange. An infinite loop would occur."),

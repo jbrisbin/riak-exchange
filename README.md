@@ -1,7 +1,6 @@
 # RabbitMQ Riak Exchange
 
-Latest tagged version works with RabbitMQ 2.5.0. It should work for earlier versions of the broker by 
-using the proper tag of rabbit_common.
+Latest tagged version works with RabbitMQ 2.6.1 and Riak 1.0.0 (Riak Erlang client ver 1.2.0).
 
 This is a custom exchange type for RabbitMQ that will put any message sent to it into Riak. 
 By default, the Riak exchange will use your exchange name as the bucket name and your routing key as the Riak 

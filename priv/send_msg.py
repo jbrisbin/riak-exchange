@@ -5,13 +5,14 @@ import amqplib.client_0_8 as amqp
 conn = amqp.Connection()
 ch = conn.channel()
 
+timestamp = datetime.now().strftime("%y%m%d%H%M%S%f")
 msg = amqp.Message(
-  "{\"now\": \"%s\"}" % (datetime.now().strftime("%d/%m/%y %H:%M")), 
+  "{\"type\": \"presence\", \"user\": \"jonbrisbin\", \"timestamp\": \"%s\"}" % (datetime.now().strftime("%d/%m/%y %H:%M")), 
   content_type="application/json", 
   application_headers={
-    "test": "header"
-    # "X-Riak-Bucket": "test",
-    # "X-Riak-Key": "test2"
+    "Location": "Chicago",
+    "X-Riak-Bucket": "auditlog",
+    "X-Riak-Key": timestamp
   }
 )
-ch.basic_publish(msg, "rtest", "rtest")
+ch.basic_publish(msg, "auditlog", timestamp)
