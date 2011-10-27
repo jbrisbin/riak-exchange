@@ -94,37 +94,47 @@ route(X=#exchange{name = #resource{virtual_host = _VirtualHost, name = Name}},
         <<Chunk/binary, NewPayload/binary>>
       end, <<>>, PayloadRev),
       % io:format("payload: ~p~n", [Payload]),
+      % io:format("routes: ~p~n", [Routes]),
 
       lists:foldl(fun(Route, _) ->
         % Look for bucket from headers or default to exchange name
-        Bucket = case lists:keyfind(?BUCKET, 1, Headers) of
-          {?BUCKET, _, B} -> B;
-                        _ -> Name
+        Bucket = case Headers of 
+          undefined -> Name;
+                  _ -> case lists:keyfind(?BUCKET, 1, Headers) of
+                         {?BUCKET, _, B} -> B;
+                                       _ -> Name
+                       end
         end,
         % Look for key from headers or default to routing key
-        Key = case lists:keyfind(?KEY, 1, Headers) of
-          {?KEY, _, K} -> K;
-                     _ -> Route
+        Key = case Headers of
+          undefined -> Route;
+                  _ -> case lists:keyfind(?KEY, 1, Headers) of
+                         {?KEY, _, K} -> K;
+                                    _ -> Route
+                       end
         end,
 
         % Insert or update everything
-        io:format("storing message: /~s/~s as ~s~n", [Bucket, Key, ContentType]),
+        % io:format("storing message: /~s/~s as ~s~n", [Bucket, Key, ContentType]),
         Obj0 = case riakc_pb_socket:get(Client, Bucket, Key) of
           {ok, OldObj} -> riakc_obj:update_value(OldObj, Payload, binary_to_list(ContentType));
                      _ -> riakc_obj:new(Bucket, Key, Payload, binary_to_list(ContentType))
         end,
 
         % Populate metadata from msg properties
-        Obj1 = case lists:foldl(fun({PropKey, PropType, PropVal}, NewProps) ->
-          io:format("key, type, val= (~p, ~p, ~p)~n", [PropKey, PropType, PropVal]),
-              case PropKey of
-                <<"X-Riak-Bucket", _/binary>> -> NewProps;
-                <<"X-Riak-Key", _/binary>>    -> NewProps;
-                _                             -> [{<<"X-Riak-Meta-", PropKey/binary>>, PropVal} | NewProps]
-              end
-            end, [], Headers) of
-             [] -> Obj0;
-          CMeta -> riakc_obj:update_metadata(Obj0, dict:store(<<"X-Riak-Meta">>, CMeta, riakc_obj:get_update_metadata(Obj0)))
+        Obj1 = case Headers of 
+          undefined -> Obj0;
+                  _ -> case lists:foldl(fun({PropKey, PropType, PropVal}, NewProps) ->
+                              % io:format("key, type, val= (~p, ~p, ~p)~n", [PropKey, PropType, PropVal]),
+                              case PropKey of
+                                <<"X-Riak-Bucket", _/binary>> -> NewProps;
+                                <<"X-Riak-Key", _/binary>>    -> NewProps;
+                                _                             -> [{<<"X-Riak-Meta-", PropKey/binary>>, PropVal} | NewProps]
+                              end
+                            end, [], Headers) of
+                            [] -> Obj0;
+                          CMeta -> riakc_obj:update_metadata(Obj0, dict:store(<<"X-Riak-Meta">>, CMeta, riakc_obj:get_update_metadata(Obj0)))
+                       end
         end,
 
         % Insert/Update data
