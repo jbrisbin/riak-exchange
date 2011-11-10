@@ -48,9 +48,9 @@ Enable the plugin (including dependencies) by executing:
   
 If you run `list` again, you should see them enabled:
 
-    [E] protobuffs                0.6.0
+    [e] protobuffs                0.6.0
     [E] rabbit_exchange_type_riak 0.1.7
-    [E] riakc                     1.2.0
+    [e] riakc                     1.2.0
 
 *NOTE:* I've also put up a tar file of the required .ez files you need to install in your RabbitMQ's plugins directory.
 
