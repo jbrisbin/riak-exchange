@@ -2,37 +2,36 @@
 -include("riak_exchange.hrl").
 -behaviour(rabbit_exchange_type).
 
--define(EXCHANGE_TYPE_BIN, <<"x-riak">>).
--define(HOST, <<"host">>).
--define(PORT, <<"port">>).
--define(MAX_CLIENTS, <<"maxclients">>).
--define(TYPE, <<"type-module">>).
--define(BUCKET, <<"X-Riak-Bucket">>).
--define(KEY, <<"X-Riak-Key">>).
+-define(BUCKET,             <<"X-Riak-Bucket">>).
+-define(EXCHANGE_TYPE_BIN,  <<"x-riak">>).
+-define(HOST,               <<"host">>).
+-define(KEY,                <<"X-Riak-Key">>).
+-define(PORT,               <<"port">>).
+-define(MAX_CLIENTS,        <<"maxclients">>).
+-define(TYPE,               <<"type-module">>).
 
--rabbit_boot_step({?MODULE,
-                   [{description, "exchange type riak"},
-                    {mfa, {rabbit_registry, register, [exchange, ?EXCHANGE_TYPE_BIN, ?MODULE]}},
-                    {requires, rabbit_registry},
-                    {enables, kernel_ready}]}).
+-rabbit_boot_step({?MODULE, [
+  {description,   "exchange type riak"},
+  {mfa,           {rabbit_registry, register, [exchange, ?EXCHANGE_TYPE_BIN, ?MODULE]}},
+  {requires,      rabbit_registry},
+  {enables,       kernel_ready}
+]}).
 
 -export([
-  description/0, 
-  route/2
-]).
--export([
-  serialise_events/0,
-  validate/1, 
-  create/2, 
-  recover/2, 
-  delete/3, 
   add_binding/3, 
+  assert_args_equivalence/2,
+  create/2, 
+  delete/3, 
+  description/0, 
+  recover/2, 
   remove_bindings/3,
-  assert_args_equivalence/2
+  route/2,
+  serialise_events/0,
+  validate/1
 ]).
 
 description() ->
-  [{name, ?EXCHANGE_TYPE_BIN}, {description, <<"exchange type Riak">>}].
+  [{name, ?EXCHANGE_TYPE_BIN}, {description, <<"exchange type riak">>}].
 
 serialise_events() -> 
   false.
@@ -124,7 +123,7 @@ route(X=#exchange{name = #resource{virtual_host = _VirtualHost, name = Name}},
         % Populate metadata from msg properties
         Obj1 = case Headers of 
           undefined -> Obj0;
-                  _ -> case lists:foldl(fun({PropKey, PropType, PropVal}, NewProps) ->
+                  _ -> case lists:foldl(fun({PropKey, _PropType, PropVal}, NewProps) ->
                               % io:format("key, type, val= (~p, ~p, ~p)~n", [PropKey, PropType, PropVal]),
                               case PropKey of
                                 <<"X-Riak-Bucket", _/binary>> -> NewProps;
