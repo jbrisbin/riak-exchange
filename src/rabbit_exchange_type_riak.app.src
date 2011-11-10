@@ -5,6 +5,13 @@
   {modules, []},
   {registered, []},
   {env, []},
-  {applications, [kernel, stdlib, rabbit, mnesia]}
+  {applications, [
+    kernel, 
+    stdlib, 
+    rabbit, 
+    mnesia,
+    protobuffs,
+    riakc
+  ]}
  ]
 }.

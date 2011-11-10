@@ -32,18 +32,18 @@ To install from source:
 
 Starting with RabbitMQ version 2.7.0, you must also enable the plugin using the new `rabbitmq-plugins` script.
 
+Issuing...
+
     rabbitmq-plugins list
 
-Should give you a list of the plugins available to enable:
+...should give you a list of the plugins available to enable:
 
     [ ] protobuffs                0.6.0
     [ ] rabbit_exchange_type_riak 0.1.7
     [ ] riakc                     1.2.0
 
-Enable the plugins by executing:
+Enable the plugin (including dependencies) by executing:
 
-    rabbitmq-plugins enable protobuffs
-    rabbitmq-plugins enable riakc
     rabbitmq-plugins enable rabbit_exchange_type_riak
   
 If you run `list` again, you should see them enabled:
