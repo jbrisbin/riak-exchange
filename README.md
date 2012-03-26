@@ -30,7 +30,7 @@ To install from source:
     cp deps/*.ez $RABBITMQ_HOME/plugins
     cp dist/*.ez $RABBITMQ_HOME/plugins
 
-Starting with RabbitMQ version 2.7.0, you must also enable the plugin using the new `rabbitmq-plugins` script.
+Starting with RabbitMQ version 2.7, you must also enable the plugin using the new `rabbitmq-plugins` script.
 
 Issuing...
 
@@ -39,8 +39,8 @@ Issuing...
 ...should give you a list of the plugins available to enable:
 
     [ ] protobuffs                0.6.0
-    [ ] rabbit_exchange_type_riak 0.1.7
-    [ ] riakc                     1.2.0
+    [ ] rabbit_exchange_type_riak 0.1.8
+    [ ] riakc                     1.2.1
 
 Enable the plugin (including dependencies) by executing:
 
@@ -49,8 +49,8 @@ Enable the plugin (including dependencies) by executing:
 If you run `list` again, you should see them enabled:
 
     [e] protobuffs                0.6.0
-    [E] rabbit_exchange_type_riak 0.1.7
-    [e] riakc                     1.2.0
+    [E] rabbit_exchange_type_riak 0.1.8
+    [e] riakc                     1.2.1
 
 *NOTE:* I've also put up a tar file of the required .ez files you need to install in your RabbitMQ's plugins directory.
 
