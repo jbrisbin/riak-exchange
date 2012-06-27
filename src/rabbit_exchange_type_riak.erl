@@ -22,6 +22,7 @@
   assert_args_equivalence/2,
   create/2, 
   delete/3, 
+  policy_changed/3,
   description/0, 
   recover/2, 
   remove_bindings/3,
@@ -61,6 +62,8 @@ delete(Tx, X, Bs) ->
   pg2:delete(XA),
   Exchange = exchange_type(X),
   Exchange:delete(Tx, X, Bs).
+
+policy_changed(_Tx, _X1, _X2) -> ok.
 
 add_binding(Tx, X, B) ->
   Exchange = exchange_type(X),
