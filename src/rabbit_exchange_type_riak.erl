@@ -88,11 +88,9 @@ route(X=#exchange{name = #resource{virtual_host = _VirtualHost, name = Name}},
     payload_fragments_rev = PayloadRev
   } = rabbit_binary_parser:ensure_content_decoded(Content0),
 
-  case CT of 
-      undefined ->
-	  ContentType = <<"application/octet-stream">>;
-      _ ->
-	  ContentType = CT
+  ContentType = case CT of 
+      undefined -> <<"application/octet-stream">>;
+              _ -> CT
   end,
       
   case get_riak_client(X) of
