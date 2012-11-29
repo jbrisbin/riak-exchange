@@ -3,7 +3,7 @@ DIST_DIR=dist
 EBIN_DIR=ebin
 INCLUDE_DIRS=include
 DEPS_DIR=deps
-DEPS ?= riakc protobuffs
+DEPS ?= riakc protobuffs riak_pb
 DEPS_EZ=$(foreach DEP, $(DEPS), $(DEPS_DIR)/$(DEP).ez)
 RABBITMQ_HOME ?= .
 
