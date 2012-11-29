@@ -38,8 +38,9 @@ serialise_events() ->
   false.
 
 validate(X) ->
-  Exchange = exchange_type(X),
-  Exchange:validate(X).
+%    io:format("Validate passed: ~w~n", [X]),
+    Exchange = exchange_type(X),
+    Exchange:validate(X).
   
 create(Tx, X = #exchange{name = #resource{virtual_host=_VirtualHost, name=_Name}, arguments = _Args}) ->
   XA = exchange_a(X),
@@ -77,26 +78,31 @@ assert_args_equivalence(X, Args) ->
   rabbit_exchange:assert_args_equivalence(X, Args).
   
 route(X=#exchange{name = #resource{virtual_host = _VirtualHost, name = Name}}, 
-      D=#delivery{message = _Message0 = #basic_message{
-          routing_keys = Routes, 
-          content = Content0}}) ->
+      D=#delivery{message = _Message0 = #basic_message{routing_keys = Routes, content = Content0}}) ->
   #content{
     properties = _Props = #'P_basic'{ 
-      content_type = ContentType, 
+      content_type = CT, 
       headers = Headers, 
       reply_to = _ReplyTo
     },
     payload_fragments_rev = PayloadRev
   } = rabbit_binary_parser:ensure_content_decoded(Content0),
 
+  case CT of 
+      undefined ->
+	  ContentType = <<"application/octet-stream">>;
+      _ ->
+	  ContentType = CT
+  end,
+      
   case get_riak_client(X) of
     {ok, Client} ->
       % Convert payload to list, concat together
       Payload = lists:foldl(fun(Chunk, NewPayload) ->
         <<Chunk/binary, NewPayload/binary>>
       end, <<>>, PayloadRev),
-      % io:format("payload: ~p~n", [Payload]),
-      % io:format("routes: ~p~n", [Routes]),
+%      io:format("payload: ~p~n", [Payload]),
+%      io:format("routes: ~p~n", [Routes]),
 
       lists:foldl(fun(Route, _) ->
         % Look for bucket from headers or default to exchange name
@@ -117,7 +123,7 @@ route(X=#exchange{name = #resource{virtual_host = _VirtualHost, name = Name}},
         end,
 
         % Insert or update everything
-        % io:format("storing message: /~s/~s as ~s~n", [Bucket, Key, ContentType]),
+%	io:format("storing message: /~s/~s as ~s~n", [Bucket, Key, ContentType]),
         Obj0 = case riakc_pb_socket:get(Client, Bucket, Key) of
           {ok, OldObj} -> riakc_obj:update_value(OldObj, Payload, binary_to_list(ContentType));
                      _ -> riakc_obj:new(Bucket, Key, Payload, binary_to_list(ContentType))
@@ -151,7 +157,7 @@ route(X=#exchange{name = #resource{virtual_host = _VirtualHost, name = Name}},
   Exchange:route(X, D).
   
 exchange_a(#exchange{name = #resource{virtual_host=VirtualHost, name=Name}}) ->
-  list_to_atom(lists:flatten(io_lib:format("~s ~s", [VirtualHost, Name]))).
+    list_to_atom(lists:flatten(io_lib:format("~s ~s", [VirtualHost, Name]))).
   
 get_riak_client(X=#exchange{arguments = Args}) ->
   Host = case lists:keyfind(?HOST, 1, Args) of
@@ -200,10 +206,11 @@ create_riak_client(XA, Host, Port, MaxClients) ->
     Err -> Err
   end.
 
-exchange_type(#exchange{ arguments=Args }) ->
+exchange_type(_Exchange=#exchange{ arguments=Args }) ->
+%    io:format("Ensuring exchange type doesn't loop: ~w~n", [Exchange]),
   case lists:keyfind(?TYPE, 1, Args) of
     {?TYPE, _, Type} -> 
-      %io:format("found type ~p~n", [Type]),
+      io:format("found type ~p~n", [Type]),
       case list_to_atom(binary_to_list(Type)) of
         rabbit_exchange_type_riak -> 
           error_logger:error_report("Cannot base a Riak exchange on a Riak exchange. An infinite loop would occur."),
@@ -212,3 +219,11 @@ exchange_type(#exchange{ arguments=Args }) ->
       end;
     _ -> rabbit_exchange_type_topic
   end.
+
+
+
+
+
+    
+
+
