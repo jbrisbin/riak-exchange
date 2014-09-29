@@ -1,6 +1,6 @@
 # RabbitMQ Riak Exchange
 
-Latest tagged version works with RabbitMQ 3.0.0 and Riak 1.2.1 (Riak Erlang client ver 1.3.1).
+Latest tagged version works with RabbitMQ 3.3.5 and Riak 2.0.
 
 This is a custom exchange type for RabbitMQ that will put any message sent to it into Riak. 
 By default, the Riak exchange will use your exchange name as the bucket name and your routing key as the Riak 
@@ -38,10 +38,10 @@ Issuing...
 
 ...should give you a list of the plugins available to enable:
 
-    [ ] protobuffs                0.7.0
-    [ ] rabbit_exchange_type_riak 0.1.9
-    [ ] riak_pb                   1.2.0	
-    [ ] riakc                     1.3.1
+    [ ] protobuffs                0.8.1p4
+    [ ] rabbit_exchange_type_riak 0.2.0
+    [ ] riak_pb                   2.0.0.16
+    [ ] riakc                     1.4.1-200-gb96d050
 
 Enable the plugin (including dependencies) by executing:
 
@@ -49,10 +49,10 @@ Enable the plugin (including dependencies) by executing:
   
 If you run `list` again, you should see them enabled:
 
-   [e] protobuffs                        0.7.0
-   [E] rabbit_exchange_type_riak         0.1.9
-   [e] riak_pb                           1.2.0
-   [e] riakc                             1.3.1
+    [e] protobuffs                        0.8.1p4
+    [E] rabbit_exchange_type_riak         0.2.0
+    [e] riak_pb                           2.0.0.16
+    [e] riakc                             1.4.1-200-gb96d050
 
 *NOTE:* I've also put up a tar file of the required .ez files you need to install in your RabbitMQ's plugins directory.
 
