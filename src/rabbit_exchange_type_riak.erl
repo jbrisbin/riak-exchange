@@ -22,13 +22,14 @@
   assert_args_equivalence/2,
   create/2, 
   delete/3, 
-  policy_changed/3,
+  policy_changed/2,
   description/0, 
   recover/2, 
   remove_bindings/3,
   route/2,
   serialise_events/0,
-  validate/1
+  validate/1,
+  validate_binding/2
 ]).
 
 description() ->
@@ -41,7 +42,10 @@ validate(X) ->
 %    io:format("Validate passed: ~w~n", [X]),
     Exchange = exchange_type(X),
     Exchange:validate(X).
-  
+validate_binding(X, B) ->
+    Exchange = exchange_type(X),
+    Exchange:validate_binding(X, B).
+
 create(Tx, X = #exchange{name = #resource{virtual_host=_VirtualHost, name=_Name}, arguments = _Args}) ->
   XA = exchange_a(X),
   pg2:create(XA),
@@ -64,7 +68,9 @@ delete(Tx, X, Bs) ->
   Exchange = exchange_type(X),
   Exchange:delete(Tx, X, Bs).
 
-policy_changed(_Tx, _X1, _X2) -> ok.
+policy_changed(X1, X2) ->
+  Exchange = exchange_type(X1),
+  Exchange:policy_changed(X1, X2).
 
 add_binding(Tx, X, B) ->
   Exchange = exchange_type(X),
